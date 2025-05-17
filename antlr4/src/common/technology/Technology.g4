@@ -1,9 +1,11 @@
-grammar technology;
+grammar Technology;
 
 technology
-    : technology_item+ EOF
+    : (technology_item | variable)* EOF
     ;
-
+variable
+    : key_ref ASSIGN val
+    ;
 technology_item
     : technology_name ASSIGN technology_body;
 
@@ -16,18 +18,18 @@ technology_body
 
 // 科技属性 key = value
 // 属性可能为条件表达式或者属性赋值表达式
-    technology_body_item
+technology_body_item
     : assign_expr
-   | assign_statement
+    | assign_statement
     | condition_expr
-   | condition_statement
+    | condition_statement
     ;
 
 
 // 普通的属性赋值表达式
 assign_expr
-    : assign_key ASSIGN val
-    | assign_key ASSIGN assign_statement
+    : (assign_key| key) ASSIGN val
+    | (assign_key| key) ASSIGN assign_statement
     ;
 assign_statement
     : LBRACE assign_expr+ RBRACE
@@ -35,23 +37,22 @@ assign_statement
 
 assign_key
     :
-    key;
+    ;
 // 条件判断表达式
 condition_expr
-    : condition_key (ASSIGN|GT|LT|GE|LE|NEQ) val
-    | condition_key ASSIGN condition_statement
+    : (condition_key|key) (ASSIGN|GT|LT|GE|LE|NEQ) val
+    | (condition_key|key) ASSIGN condition_statement
+    | (condition_key|key) ASSIGN array_val
     ;
 
 // 条件判断块
 // A=B
 // OR { A=C }
 condition_statement
-    : LBRACE (condition_expr | LOGICAL_OPERATORS ASSIGN condition_statement)* RBRACE
+    : LBRACE ( key | condition_expr | LOGICAL_OPERATORS ASSIGN condition_statement)* RBRACE
     ;
 condition_key
-    :
-    key
-    | 'weight_modifier'
+    : 'weight_modifier'
     | 'modifier'
     ;
 key
@@ -66,8 +67,8 @@ val
     | BOOLEAN
     | FLOAT
     | id_
+    | attrib
     | key_ref
-     |  array_val
 
     ;
 array_val
@@ -172,3 +173,5 @@ NL
     : [\r\n] -> channel(HIDDEN)
     ;
 WS : [ \t\r\n]+ -> skip;
+
+BOM: '\uFEFF' -> skip;
