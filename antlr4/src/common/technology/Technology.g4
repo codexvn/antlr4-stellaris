@@ -28,8 +28,13 @@ technology_body_item
 
 // 普通的属性赋值表达式
 assign_expr
-    : (assign_key| key) ASSIGN val
-    | (assign_key| key) ASSIGN assign_statement
+    : assign_expr_key ASSIGN val
+    |  ASSIGN assign_statement
+    ;
+
+assign_expr_key
+    : assign_key
+    | key
     ;
 assign_statement
     : LBRACE assign_expr+ RBRACE
@@ -38,22 +43,29 @@ assign_statement
 assign_key
     :
     ;
+
+
 // 条件判断表达式
 condition_expr
-    : (condition_key|key) (ASSIGN|GT|LT|GE|LE|NEQ) val
-    | (condition_key|key) ASSIGN condition_statement
-    | (condition_key|key) ASSIGN array_val
+    : condition_expr_key (ASSIGN|GT|LT|GE|LE|NEQ) val
+    | condition_expr_key ASSIGN condition_statement
+    ;
+condition_expr_key
+    : condition_key
+    | key
     ;
 
 // 条件判断块
 // A=B
 // OR { A=C }
 condition_statement
-    : LBRACE ( key | condition_expr | LOGICAL_OPERATORS ASSIGN condition_statement)* RBRACE
+    : LBRACE (  condition_expr | LOGICAL_OPERATORS ASSIGN condition_statement | key)* RBRACE
+    | array_val
     ;
 condition_key
     : 'weight_modifier'
     | 'modifier'
+    |
     ;
 key
     : id_
@@ -158,7 +170,7 @@ SEMI      : ';';
 COMMA     : ',';
 
 STRING
-    : '"' ~["\r\n]* '"'
+    : '"' ~["\r\n]+ '"'
     ;
 
 COMMENT
