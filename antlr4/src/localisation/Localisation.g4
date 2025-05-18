@@ -3,6 +3,7 @@ grammar Localisation;
 localisation:
     language_type COLON
     localisation_item* EOF
+    | EOF
     ;
 
 localisation_item :
@@ -16,19 +17,19 @@ language_type
     ;
 
 title: TITLE_KEY;
-title_val: STRING;
+title_val: VAL ;
 title_desc: TITLE_DESC_KEY;
-title_desc_val: STRING;
+title_desc_val: VAL;
 //desc需要排在前面,保证优先级
+VAL
+    : '"' ~[\r\n]+ '"'
+    | '""'
+    ;
 TITLE_DESC_KEY
-    : [a-zA-Z0-9_]+'_desc'
+    : [a-zA-Z0-9_\-."]+'_desc'
     ;
 TITLE_KEY
-    : [a-zA-Z0-9_]+
-    ;
-
-STRING
-    : '"' ~["\r\n]+ '"'
+    : [a-zA-Z0-9_\-."]+
     ;
 
 // 分隔符
