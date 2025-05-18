@@ -75,8 +75,9 @@ is_rare: 'is_rare' ASSIGN is_rare_val;
 is_rare_val: val;
 is_dangerous: 'is_dangerous' ASSIGN is_dangerous_val;
 is_dangerous_val: val;
-weight: 'weight' ASSIGN weight_val;
-weight_val: (LBRACE factor RBRACE | val);
+weight: 'weight' ASSIGN (weight_val1|weight_val2);
+weight_val1: LBRACE factor RBRACE;
+weight_val2: val;
 levels: 'levels' ASSIGN levels_val;
 levels_val: val;
 potential: 'potential' ASSIGN potential_val;
@@ -119,9 +120,7 @@ prerequisites
     : 'prerequisites' ASSIGN prerequisites_val
     ;
 prerequisites_val
-    : LBRACE id_*
-        condition_expr*
-    RBRACE
+    : condition_statement
     ;
 
 name: 'name' ASSIGN name_val;
@@ -151,6 +150,7 @@ technology_swap_val
          |weight)+
         RBRACE
     ;
+
 factor: 'factor' ASSIGN factor_val;
 factor_val: val;
 inline_script
@@ -209,15 +209,24 @@ variable_item
 
 // 条件判断表达式
 condition_expr
-    : condition_key (ASSIGN|GT|LT|GE|LE|NEQ) val
-    | condition_key ASSIGN condition_statement
-    | LOGICAL_OPERATORS ASSIGN condition_statement
+    : compare_condition_expr
+    | statement_condition_expr
+    | op_condition_expr
+    | in_array
     | has_trait_in_council
     | has_modifier
     | num_buildings
     | has_ancrel
     | has_seen_any_bypass
     ;
+//数据比较条件表达式
+compare_condition_expr: condition_key value_compare val;
+//条件块条件表达式
+statement_condition_expr: condition_key ASSIGN condition_statement;
+// 连续条件表达式,如 AND = {xxx}
+op_condition_expr: LOGICAL_OPERATORS ASSIGN condition_statement;
+//是否在数组中
+in_array:  id_+;
 
 has_modifier: 'has_modifier' ASSIGN has_modifier_val;
 has_modifier_val: val;
@@ -234,8 +243,7 @@ has_seen_any_bypass_val: val;
 // A=B
 // OR { A=C }
 condition_statement
-    : LBRACE ( condition_expr | key)* RBRACE
-    | array_val
+    : LBRACE condition_expr* RBRACE
     ;
 
 keyval
@@ -328,6 +336,14 @@ fragment IDENITIFIERBODY
     | [0-9_]
     ;
 
+value_compare
+    : ASSIGN
+    |  GT
+   |  LT
+     | GE
+     | LE
+    |  NEQ
+    ;
 
 // 运算符
 EQUALS    : '==';
@@ -356,6 +372,7 @@ LBRACE    : '{';
 RBRACE    : '}';
 SEMI      : ';';
 COMMA     : ',';
+COLON    : ':';
 
 STRING
     : '"' ~["\r\n]+ '"'
