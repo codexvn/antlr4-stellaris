@@ -111,8 +111,6 @@ feature_flags: 'feature_flags' ASSIGN feature_flags_val;
 feature_flags_val: array_val;
 starting_potential: 'starting_potential' ASSIGN starting_potential_val;
 starting_potential_val: condition_statement;
-ai_weight: 'ai_weight' ASSIGN ai_weight_val ;
-ai_weight_val: LBRACE(weight|factor| condition_expr| modifier| inline_script)*RBRACE;
 
 
 
@@ -169,38 +167,17 @@ modifier_val
         | inline_script
         )* RBRACE
     ;
-weight_modifier
-    : 'weight_modifier' ASSIGN weight_modifier_val
-    ;
-weight_modifier_val
-    : LBRACE
-        (factor
-        | add
-        | modifier
-        | inline_script
-        )* RBRACE
-    ;
+weight_modifier: 'weight_modifier' ASSIGN weight_modifier_val;
+weight_modifier_val: LBRACE(factor| add| modifier| inline_script)* RBRACE;
+ai_weight: 'ai_weight' ASSIGN ai_weight_val ;
+ai_weight_val: LBRACE( base|weight|factor| add| modifier| inline_script)* RBRACE;
+base: 'base' ASSIGN base_val;
+base_val: val;
 hide_prereq_for_desc: 'hide_prereq_for_desc' ASSIGN hide_prereq_for_desc_val;
 hide_prereq_for_desc_val : prereq_for_category_enum;
 
-
-
 prereqfor_desc : 'prereqfor_desc' ASSIGN prereqfor_desc_val;
-prereqfor_desc_val
-    : LBRACE
-        (hide_prereq_for_desc
-        | ship
-        | custom
-        | prereq_for_category
-        | diplo_action
-        | component)*
-    RBRACE
-    ;
-ship: 'ship' ASSIGN i18_val;
-custom: 'custom' ASSIGN i18_val;
-prereq_for_category: 'prereq_for_category' ASSIGN i18_val;
-component: 'component' ASSIGN i18_val;
-diplo_action: 'diplo_action' ASSIGN i18_val;
+prereqfor_desc_val: LBRACE(hide_prereq_for_desc|prereq_for_category_enum ASSIGN i18_val)*RBRACE;
 i18_val: LBRACE (i18_title| i18_desc)+ RBRACE;
 i18_title : 'title' ASSIGN i18_title_val;
 i18_title_val : val;
