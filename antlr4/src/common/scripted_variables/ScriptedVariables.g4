@@ -5,9 +5,10 @@ scripted_variables
     ;
 
 variable_item
-    : '@' id_ ASSIGN val
+    : variable_key ASSIGN val
     ;
-
+variable_key:
+    '@' id_;
 val
     :
     STRING

@@ -18,8 +18,15 @@ keywork
     | 'component_technology'
     | 'ship_technology'
     ;
+technology_body_start
+    : LBRACE
+    ;
+technology_body_end
+    : RBRACE
+    ;
+
 technology_body
-    : LBRACE (
+    : technology_body_start (
     area
     | tier
     | category
@@ -47,58 +54,91 @@ technology_body
     | prereqfor_desc
     | weight_modifier
     | ai_weight
-    | starting_potential)+ RBRACE
+    | starting_potential)+ technology_body_end
     ;
 
+area: 'area' ASSIGN area_val;
+area_val: val;
+tier: 'tier' ASSIGN tier_val;
+tier_val: val;
+category: 'category' ASSIGN  category_val ;
+category_val: LBRACE val RBRACE;
+icon: 'icon' ASSIGN icon_val;
+icon_val: val;
+cost: 'cost' ASSIGN cost_val;
+cost_val: val;
+cost_by_script: 'cost' ASSIGN  cost_by_script_val ;
+cost_by_script_val: LBRACE (factor| inline_script)* RBRACE;
+cost_per_level: 'cost_per_level' ASSIGN cost_per_level_val;
+cost_per_level_val: val;
+is_rare: 'is_rare' ASSIGN is_rare_val;
+is_rare_val: val;
+is_dangerous: 'is_dangerous' ASSIGN is_dangerous_val;
+is_dangerous_val: val;
+weight: 'weight' ASSIGN weight_val;
+weight_val: (LBRACE factor RBRACE | val);
+levels: 'levels' ASSIGN levels_val;
+levels_val: val;
+potential: 'potential' ASSIGN potential_val;
+potential_val: condition_statement;
+gateway: 'gateway' ASSIGN gateway_val;
+gateway_val: 'ship'| IDENTIFIER;
 
-area: 'area' ASSIGN val;
-tier: 'tier' ASSIGN val;
-category: 'category' ASSIGN LBRACE val RBRACE;
-icon: 'icon' ASSIGN val;
-cost: 'cost' ASSIGN val;
-cost_by_script: 'cost' ASSIGN LBRACE(factor| inline_script)*RBRACE;
-cost_per_level: 'cost_per_level' ASSIGN val;
-is_rare: 'is_rare' ASSIGN val;
-is_dangerous: 'is_dangerous' ASSIGN val;
-weight: 'weight' ASSIGN (LBRACE factor RBRACE | val);
-levels: 'levels' ASSIGN val;
-potential: 'potential' ASSIGN condition_statement;
-gateway: 'gateway' ASSIGN gateway_enum;
-repeatable: 'repeatable' ASSIGN val;
-weight_groups: 'weight_groups' ASSIGN val;
-mod_weight_if_group_picked: 'mod_weight_if_group_picked' ASSIGN condition_statement;
-start_tech: 'start_tech' ASSIGN val;
-is_reverse_engineerable: 'is_reverse_engineerable' ASSIGN val;
-ai_update_type: 'ai_update_type' ASSIGN val;
-is_insight: 'is_insight' ASSIGN val;
-feature_flags: 'feature_flags' ASSIGN val;
-starting_potential: 'starting_potential' ASSIGN condition_statement;
-ai_weight: 'ai_weight' ASSIGN LBRACE
-    (weight
-     |factor
-     | condition_expr
-     | modifier
-     | inline_script)*
-    RBRACE;
+repeatable: 'repeatable' ASSIGN repeatable_val;
+repeatable_val: val;
+weight_groups: 'weight_groups' ASSIGN weight_groups_val;
+weight_groups_val: val;
+mod_weight_if_group_picked: 'mod_weight_if_group_picked' ASSIGN mod_weight_if_group_picked_val;
+mod_weight_if_group_picked_val: condition_statement;
+start_tech: 'start_tech' ASSIGN start_tech_val;
+start_tech_val: val;
+is_reverse_engineerable: 'is_reverse_engineerable' ASSIGN is_reverse_engineerable_val;
+is_reverse_engineerable_val: val;
+ai_update_type: 'ai_update_type' ASSIGN ai_update_type_val;
+ai_update_type_val: val;
+is_insight: 'is_insight' ASSIGN is_insight_val;
+is_insight_val: val;
+feature_flags: 'feature_flags' ASSIGN feature_flags_val;
+feature_flags_val: val;
+starting_potential: 'starting_potential' ASSIGN starting_potential_val;
+starting_potential_val: condition_statement;
+ai_weight: 'ai_weight' ASSIGN ai_weight_val ;
+ai_weight_val: LBRACE
+                   (weight
+                    |factor
+                    | condition_expr
+                    | modifier
+                    | inline_script)*
+                   RBRACE;
 
 
 
 
 
 prerequisites
-    : 'prerequisites' ASSIGN LBRACE
-        id_*
+    : 'prerequisites' ASSIGN prerequisites_val
+    ;
+prerequisites_val
+    : LBRACE id_*
         condition_expr*
     RBRACE
     ;
 
-name: 'name' ASSIGN val;
-inherit_icon: 'inherit_icon' ASSIGN val;
-inherit_name: 'inherit_name' ASSIGN val;
-inherit_effects: 'inherit_effects' ASSIGN val;
-trigger: 'trigger' ASSIGN condition_statement;
+name: 'name' ASSIGN name_val;
+name_val: val;
+inherit_icon: 'inherit_icon' ASSIGN inherit_icon_val;
+inherit_icon_val: val;
+inherit_name: 'inherit_name' ASSIGN inherit_name_val;
+inherit_name_val: val;
+inherit_effects: 'inherit_effects' ASSIGN inherit_effects_val;
+inherit_effects_val: val;
+trigger: 'trigger' ASSIGN trigger_val;
+trigger_val: condition_statement;
 technology_swap
-    : 'technology_swap' ASSIGN LBRACE
+    : 'technology_swap' ASSIGN technology_swap_val
+        ;
+technology_swap_val
+    : LBRACE
         (name
          |inherit_icon
          |inherit_name
@@ -109,50 +149,59 @@ technology_swap
          |area
          |category
          |weight)+
-         RBRACE
-        ;
-factor: 'factor' ASSIGN val;
-inline_script
-    : 'inline_script' ASSIGN LBRACE
-        keyval +
         RBRACE
-    |'inline_script' ASSIGN  key;
+    ;
+factor: 'factor' ASSIGN factor_val;
+factor_val: val;
+inline_script
+    : 'inline_script' ASSIGN (inline_script_val_1|inline_script_val_2);
+inline_script_val_1: LBRACE keyval + RBRACE;
+inline_script_val_2: key;
 
 modifier
-    : 'modifier' ASSIGN LBRACE(
-        factor
+    : 'modifier' ASSIGN modifier_val
+    ;
+modifier_val
+    : LBRACE
+        (factor
         | condition_expr
         | inline_script
-    )* RBRACE
+        )* RBRACE
     ;
 weight_modifier
-    : 'weight_modifier' ASSIGN LBRACE(
-    factor
-    | condition_expr
-    | modifier
-    | inline_script
-    )* RBRACE
+    : 'weight_modifier' ASSIGN weight_modifier_val
     ;
+weight_modifier_val
+    : LBRACE
+        (factor
+        | condition_expr
+        | modifier
+        | inline_script
+        )* RBRACE
+    ;
+hide_prereq_for_desc: 'hide_prereq_for_desc' ASSIGN hide_prereq_for_desc_val;
+hide_prereq_for_desc_val : val;
+i18_val: LBRACE (i18_title| i18_desc)+ RBRACE;
+i18_title : 'title' ASSIGN i18_title_val;
+i18_title_val : val;
+i18_desc : 'desc' ASSIGN i18_desc_val;
+i18_desc_val : val;
 
-hide_prereq_for_desc: 'hide_prereq_for_desc' ASSIGN val;
-i18: LBRACE (i18_title| i18_desc)+ RBRACE;
-i18_title : 'title' ASSIGN val;
-i18_desc : 'desc' ASSIGN val;
-
-custom: 'custom' ASSIGN i18;
-prereq_for_category: 'prereq_for_category' ASSIGN i18;
-component: 'component' ASSIGN i18;
-ship: 'ship' ASSIGN i18;
-diplo_action: 'diplo_action' ASSIGN i18;
-prereqfor_desc
-    : 'prereqfor_desc' ASSIGN LBRACE
-    (hide_prereq_for_desc
-    | custom
-    | ship
-    | prereq_for_category
-    | diplo_action
-    | component)*
-        RBRACE
+custom: 'custom' ASSIGN i18_val;
+prereq_for_category: 'prereq_for_category' ASSIGN i18_val;
+component: 'component' ASSIGN i18_val;
+ship: 'ship' ASSIGN i18_val;
+diplo_action: 'diplo_action' ASSIGN i18_val;
+prereqfor_desc : 'prereqfor_desc' ASSIGN prereqfor_desc_val;
+prereqfor_desc_val
+    : LBRACE
+        (hide_prereq_for_desc
+        | custom
+        | ship
+        | prereq_for_category
+        | diplo_action
+        | component)*
+    RBRACE
     ;
 variable_item
     : key_ref ASSIGN val
@@ -168,14 +217,18 @@ condition_expr
     | num_buildings
     | has_ancrel
     | has_seen_any_bypass
-
     ;
 
-has_modifier: 'has_modifier' ASSIGN val;
-has_trait_in_council: 'has_trait_in_council' ASSIGN LBRACE keyval + RBRACE;
-num_buildings: 'num_buildings' ASSIGN condition_statement;
-has_ancrel: 'has_ancrel' ASSIGN val;
-has_seen_any_bypass: 'has_seen_any_bypass' ASSIGN val;
+has_modifier: 'has_modifier' ASSIGN has_modifier_val;
+has_modifier_val: val;
+has_trait_in_council: 'has_trait_in_council' ASSIGN has_trait_in_council_val;
+has_trait_in_council_val: LBRACE keyval + RBRACE;
+num_buildings: 'num_buildings' ASSIGN num_buildings_val;
+num_buildings_val: condition_statement;
+has_ancrel: 'has_ancrel' ASSIGN has_ancrel_val;
+has_ancrel_val: val;
+has_seen_any_bypass: 'has_seen_any_bypass' ASSIGN has_seen_any_bypass_val;
+has_seen_any_bypass_val: val;
 
 // 条件判断块
 // A=B
@@ -223,11 +276,6 @@ key_ref
     ;
 //因为有些tag是以#开头的,所以需要全部枚举出来
 tag : '#repeatable'| 'repeatable';
-gateway_enum
-    : 'ship'
-    | IDENTIFIER
-
-    ;
 attrib
     : id_ accessor (attrib | id_)
     ;
