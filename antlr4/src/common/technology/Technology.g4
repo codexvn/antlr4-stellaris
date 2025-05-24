@@ -19,13 +19,16 @@ grammar Technology;
     }
 }
 root
-    : (technology_item | variable_item)* EOF
+    : (technology_item | scripted_variable_identity)* EOF
+    ;
+scripted_variable_identity
+    : scripted_variable ASSIGN val
     ;
 technology_item
     : technology_name ASSIGN technology_body;
 
 technology_name
-    : IDENTIFIER
+    : ID
     ;
 //部分关键字,防止与值冲突
 technology_body_start
@@ -43,6 +46,7 @@ technology_body
     | potential
     | ai_update_type
     | prerequisites
+    | prereqfor_desc
     | is_reverse_engineerable
     | start_tech
     | is_rare
@@ -58,11 +62,10 @@ technology_body
     | levels
     | technology_swap
     | gateway
-    | repeatable
     | weight_groups
     | mod_weight_if_group_picked
     | feature_flags
-    | prereqfor_desc
+
     | ai_weight
     | starting_potential)+ technology_body_end
     ;
@@ -110,20 +113,17 @@ PROP_KEY_LEVELS: 'levels' { lookAheadNonWhitespace(1) == '=' }?;
 levels_val: val;
 potential: PROP_KEY_POTENTIAL  ASSIGN potential_val;
 PROP_KEY_POTENTIAL: 'potential' { lookAheadNonWhitespace(1) == '=' }?;
-potential_val: condition_statement;
+potential_val: trigger_val;
 gateway: PROP_KEY_GATEWAY ASSIGN gateway_val;
 PROP_KEY_GATEWAY: 'gateway' { lookAheadNonWhitespace(1) == '=' }?;
-gateway_val: IDENTIFIER;
+gateway_val: ID;
 
-repeatable: PROP_KEY_REPEATABLE ASSIGN repeatable_val;
-PROP_KEY_REPEATABLE: 'repeatable' { lookAheadNonWhitespace(1) == '=' }?;
-repeatable_val: val;
 weight_groups: PROP_KEY_WEIGHT_GROUPS ASSIGN weight_groups_val;
 PROP_KEY_WEIGHT_GROUPS: 'weight_groups' { lookAheadNonWhitespace(1) == '=' }?;
-weight_groups_val: array_val;
+weight_groups_val: id_array_val;
 mod_weight_if_group_picked: PROP_KEY_MOD_WEIGHT_IF_GROUP_PICKED  ASSIGN mod_weight_if_group_picked_val;
 PROP_KEY_MOD_WEIGHT_IF_GROUP_PICKED: 'mod_weight_if_group_picked' { lookAheadNonWhitespace(1) == '=' }?;
-mod_weight_if_group_picked_val: condition_statement;
+mod_weight_if_group_picked_val: definitions_val;
 start_tech: PROP_KEY_START_TECH ASSIGN start_tech_val;
 PROP_KEY_START_TECH: 'start_tech' { lookAheadNonWhitespace(1) == '=' }?;
 start_tech_val: BOOLEAN;
@@ -138,10 +138,10 @@ PROP_KEY_IS_INSIGHT: 'is_insight' { lookAheadNonWhitespace(1) == '=' }?;
 is_insight_val: BOOLEAN;
 feature_flags: PROP_KEY_FEATURE_FLAGS  ASSIGN feature_flags_val;
 PROP_KEY_FEATURE_FLAGS: 'feature_flags' { lookAheadNonWhitespace(1) == '=' }?;
-feature_flags_val: array_val;
+feature_flags_val: val;
 starting_potential: PROP_KEY_STARTING_POTENTIAL  ASSIGN starting_potential_val;
 PROP_KEY_STARTING_POTENTIAL: 'starting_potential' { lookAheadNonWhitespace(1) == '=' }?;
-starting_potential_val: condition_statement;
+starting_potential_val: trigger_val;
 
 
 
@@ -149,7 +149,7 @@ starting_potential_val: condition_statement;
 
 prerequisites: PROP_KEY_PREREQUISITES  ASSIGN prerequisites_val;
 PROP_KEY_PREREQUISITES: 'prerequisites' { lookAheadNonWhitespace(1) == '=' }?;
-prerequisites_val: condition_statement;
+prerequisites_val: trigger_val;
 
 
 technology_swap: PROP_KEY_TECHNOLOGY_SWAP ASSIGN technology_swap_val;
@@ -182,33 +182,24 @@ PROP_KEY_INHERIT_EFFECTS: 'inherit_effects'  { lookAheadNonWhitespace(1) == '=' 
 inherit_effects_val: val;
 trigger: PROP_KEY_TRIGGER ASSIGN trigger_val;
 PROP_KEY_TRIGGER: 'trigger'  { lookAheadNonWhitespace(1) == '=' }?;
-trigger_val: condition_statement;
 
 factor: PROP_KEY_FACTOR ASSIGN factor_val;
 PROP_KEY_FACTOR: 'factor'  { lookAheadNonWhitespace(1) == '=' }?;
-factor_val: normal_val;
+factor_val: val ;
 add: PROP_KEY_ADD  ASSIGN add_val;
 PROP_KEY_ADD: 'add'  { lookAheadNonWhitespace(1) == '=' }?;
-add_val: FLOAT|normal_val;
+add_val: val;
 inline_script
     :  PROP_KEY_INLINE_SCRIPT ASSIGN (inline_script_val_1|inline_script_val_2);
 PROP_KEY_INLINE_SCRIPT: 'inline_script'  { lookAheadNonWhitespace(1) == '=' }?;
 inline_script_val_1: LBRACE (key ASSIGN val) + RBRACE;
-inline_script_val_2: key;
+inline_script_val_2: val;
 
 modifier
     : PROP_KEY_MODIFIER ASSIGN modifier_val
     ;
 PROP_KEY_MODIFIER: 'modifier'  { lookAheadNonWhitespace(1) == '=' }?;
-modifier_val
-    : LBRACE
-        (factor
-        | add
-        | compare_condition_expr
-        | op_condition_expr
-        | inline_script
-        )* RBRACE
-    ;
+
 weight_modifier: PROP_KEY_WEIGHT_MODIFIER ASSIGN weight_modifier_val;
 PROP_KEY_WEIGHT_MODIFIER: 'weight_modifier'  { lookAheadNonWhitespace(1) == '=' }?;
 weight_modifier_val: LBRACE(factor| add| modifier| inline_script)* RBRACE;
@@ -236,96 +227,197 @@ i18_desc : PROP_KEY_DESC ASSIGN i18_desc_val;
 PROP_KEY_DESC: 'desc'  { lookAheadNonWhitespace(1) == '=' }?;
 i18_desc_val : val;
 
-variable_item
-    : key_ref ASSIGN val
+
+
+//事件（event）
+//用于定义游戏中发生的具体事件（如外交事件、科技突破、特殊项目等）。
+//
+//包含触发条件（trigger）、执行结果（effect）、描述文本（title、desc）等。
+//event_val: ;
+
+
+
+
+
+
+// 效果（effect）
+//用于实际执行动作，如给予资源、改变政体、生成舰船、添加特性等。
+//
+//和 trigger 结构上相似，但用于行动而非判断。
+//
+//常用于事件选项、decision 执行体、start_effect、on_action 等。
+//effect_val: ;
+
+
+
+
+
+// 触发器（trigger）
+//用于条件判断，返回 true/false。
+//
+//常用于事件触发、decision 是否可用、effect 是否执行等场景。
+//
+//可以嵌套使用逻辑判断（如 AND、OR、NOT）以及使用上下文敏感的判断。
+trigger_val: trigger_body_start logical_block_expr* trigger_body_end;
+//修饰符（modifier）
+//改变某个国家、舰队、星球、领袖等对象的属性。
+//
+//常用于科技、传统、政策、特质等地方。
+//
+//与 effect 不同的是：modifier 是持续性的加成，而 effect 是一次性的动作。
+modifier_val
+    : LBRACE
+        (factor
+        | add
+        | logical_block_expr
+        | inline_script
+        )* RBRACE
     ;
 
-//逻辑门条件表达式
-op_condition_expr: LOGICAL_OPERATORS ASSIGN condition_statement;
-
-// 条件判断表达式
-condition_expr
-    : compare_condition_expr
-    | op_condition_expr
-    | in_condition_expr
+//定义项（definitions）
+//如 country_types、technology、species_classes 等，提供模板式的数据结构定义。
+//
+definitions_val
+    : LBRACE (key ASSIGN val )* RBRACE
     ;
-// 条件判断块
-// A=B
+
+
+
+trigger_body_start
+    : LBRACE
+    ;
+trigger_body_end
+    : RBRACE
+    ;
+
+logical_block_expr: value_compare_expr|object_compare_expr|logical_expr|if_else_expr|switch_expr|array_compare_expr_val;
+block_start
+    : LBRACE
+    ;
+block_end
+    : RBRACE
+    ;
+//a=b
+value_compare_expr: value_compare_expr_key relational_operators value_compare_expr_val;
+value_compare_expr_key: key;
+value_compare_expr_val: val;
+//a={b=c}
+//a={a b}
+object_compare_expr: object_compare_expr_key ASSIGN object_compare_expr_val ;
+object_compare_expr_key: key;
+object_compare_expr_val: block_start logical_block_expr* block_end;
+array_compare_expr_val: val;
+//逻辑门运算
 // OR { A=C }
-condition_statement
-    : LBRACE condition_expr* RBRACE
-    ;
+logical_expr: logical_expr_key ASSIGN logical_expr_val  ;
+logical_expr_key: logical_operators;
+logical_expr_val: block_start logical_block_expr* block_end;
+//条件运算
+// if { A=C }
+if_else_expr: if_else_expr_key ASSIGN if_else_expr_val;
+if_else_expr_key: IF| ELSE_IF| ELSE;
+if_else_expr_val: block_start logical_block_expr* block_end;
+switch_expr: switch_expr_key ASSIGN switch_expr_val;
+switch_expr_key: SWITCH;
+switch_expr_val: block_start logical_block_expr* block_end;
 
-//数据比较条件表达式
-compare_condition_expr: value_compare_condition_expr| object_compare_condition_expr;
-//在列表中
-in_condition_expr:  id_+;
-//用于数据的比较
-value_compare_condition_expr: condition_key value_compare val;
-//条件块条件表达式
-object_compare_condition_expr: condition_key ASSIGN condition_statement;
-//是否在数组中
-condition_key: key ;
 
-array_val
-    : LBRACE val* RBRACE
-    ;
 
+
+//数值右值
 val
-    : normal_val;
-
-normal_val
-    :
-    STRING
-    | INTEGER
+    : INTEGER
     | BOOLEAN
     | FLOAT
-    | key
-    | key_ref
-    ;
-key
-    : id_
-    | attrib
-    | tag
-    ;
-
-key_ref
-    : '@' id_
-    ;
-//因为有些tag是以#开头的,所以需要全部枚举出来
-tag : '#repeatable'| 'repeatable';
-attrib
-    : id_ accessor (attrib | id_)
-    ;
-
-accessor
-    : '.'
-    | '@'
-    | ':'
-    ;
-
-id_
-    : IDENTIFIER
     | STRING
-    | INTEGER
+    | ATTRIB
+    | ID
+    | id_array_val
+    | scripted_variable
+    | call_script_trigger
     ;
-
-
-
-BOOLEAN
-	: YES
-	| NO
-	;
-
-LOGICAL_OPERATORS
+id_array_val
+    : LBRACE ID* RBRACE
+    ;
+//参数
+call_script_trigger: '"'key'"';
+//全局变量
+scripted_variable : '@' key;
+logical_operators
     : AND
     | OR
     | NOT
     | NOR
+    | NAND
     ;
-IDENTIFIER
-    : IDENITIFIERHEAD IDENITIFIERBODY*
+relational_operators
+    : ASSIGN
+    | GT
+    | LT
+    | GE
+    | LE
+    | NEQ
     ;
+
+
+key
+    : ID
+    | ATTRIB
+    ;
+
+ACCESSOR
+    : '.'
+    | ':'
+    ;
+VARIABLE_PREFIX
+    : '@'
+    ;
+//以下是token定义
+//常量放在最前面
+// 运算符常量
+ASSIGN    : '=';
+GT        : '>';
+LT        : '<';
+GE        : '>=';
+LE        : '<=';
+NEQ       : '!=';
+PLUS      : '+';
+MINUS     : '-';
+MULT      : '*';
+DIV       : '/';
+
+IF : 'if';
+ELSE_IF : 'else_if ';
+ELSE : 'else';
+SWITCH: 'switch';
+
+OR       : 'OR';
+AND      : 'AND';
+NOT      : 'NOT';
+NOR      : 'NOR';
+NAND     : 'NAND';
+
+BOOLEAN: YES | NO;
+YES      : 'yes';
+NO       : 'no';
+
+// 分隔符
+LPAREN    : '(';
+RPAREN    : ')';
+LBRACE    : '{';
+RBRACE    : '}';
+SEMI      : ';';
+COMMA     : ',';
+
+//宏相关
+LBRACKET    : '[';
+RBRACKET    : ']';
+BANG      : '!';
+
+
+
+
+
 
 INTEGER
     : [+-]? INTEGERFRAG
@@ -338,53 +430,26 @@ FLOAT
 fragment INTEGERFRAG
     : [0-9]+
     ;
-
 fragment IDENITIFIERHEAD
-    : [a-zA-Z/]
+    : [a-zA-Z$|/]
     ;
 
 fragment IDENITIFIERBODY
     : IDENITIFIERHEAD
     | [0-9_]
     ;
-
-value_compare
-    : ASSIGN
-    |  GT
-   |  LT
-     | GE
-     | LE
-    |  NEQ
+ATTRIB
+    : ID ACCESSOR (ATTRIB | ID)*
+    ;
+ID
+    : IDENTIFIER
+    | INTEGER
     ;
 
-// 运算符
-EQUALS    : '==';
-ASSIGN    : '=';
-GT        : '>';
-LT        : '<';
-GE        : '>=';
-LE        : '<=';
-NEQ       : '!=';
-PLUS      : '+';
-MINUS     : '-';
-MULT      : '*';
-DIV       : '/';
+IDENTIFIER
+    : IDENITIFIERHEAD IDENITIFIERBODY*
+    ;
 
-OR       : 'OR';
-AND      : 'AND';
-NOT      : 'NOT';
-NOR      : 'NOR';
-YES      : 'yes';
-NO       : 'no';
-
-// 分隔符
-LPAREN    : '(';
-RPAREN    : ')';
-LBRACE    : '{';
-RBRACE    : '}';
-SEMI      : ';';
-COMMA     : ',';
-COLON    : ':';
 
 STRING
     : '"' ~["\r\n]+ '"'
@@ -392,6 +457,9 @@ STRING
 
 COMMENT
     : '#' ~[\r\n]* -> channel(HIDDEN)
+    ;
+LOGGING
+    : 'log' ~[\r\n]* -> channel(HIDDEN)
     ;
 
 SPACE
