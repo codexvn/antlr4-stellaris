@@ -65,7 +65,6 @@ technology_body
     | weight_groups
     | mod_weight_if_group_picked
     | feature_flags
-
     | ai_weight
     | starting_potential)+ technology_body_end
     ;
@@ -149,7 +148,15 @@ starting_potential_val: trigger_val;
 
 prerequisites: PROP_KEY_PREREQUISITES  ASSIGN prerequisites_val;
 PROP_KEY_PREREQUISITES: 'prerequisites' { lookAheadNonWhitespace(1) == '=' }?;
-prerequisites_val: trigger_val;
+// 条件数组，每个元素都需要满足
+//如 { a b c} 三个都要满足
+//如 { a OR = { b c} } a 满足 且 (b 或 c) 满足
+prerequisites_val:
+block_start
+ ( prerequisites_val_1 | prerequisites_val_2 )*
+block_end;
+prerequisites_val_1 : val;
+prerequisites_val_2 : logical_operators ASSIGN prerequisites_val;
 
 
 technology_swap: PROP_KEY_TECHNOLOGY_SWAP ASSIGN technology_swap_val;
